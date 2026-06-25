@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Températures Paris</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #18212f;
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    nav a {
+      color: #1c4f82;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    p {
+      margin: 0 0 22px;
+      color: #506070;
+    }
+
+    #chart {
+      width: 100%;
+      height: 520px;
+      background: #fff;
+      border: 1px solid #d9e3ef;
+      border-radius: 8px;
+    }
+
+    #status {
+      margin-top: 14px;
+      color: #506070;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav>
+      <a href="/">Accueil</a>
+      <a href="/contact">Contact</a>
+      <a href="/rapport">Rapport</a>
+      <a href="/histogramme">Histogramme</a>
+      <a href="/atelier">Atelier</a>
+    </nav>
+    <h1>Températures horaires à Paris</h1>
+    <p>Prévisions météo sur les sept prochains jours.</p>
+    <div id="chart"></div>
+    <div id="status"></div>
+  </main>
+  <script>
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(init);
+
+    let cachedRows = null;
+
+    async function init() {
+      try {
+        const rows = await fetchParisData();
+        cachedRows = rows;
+        drawChart(rows);
+        window.addEventListener('resize', () => {
+          if (cachedRows) {
+            drawChart(cachedRows);
+          }
+        });
+      } catch (err) {
+        showStatus('Erreur: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    async function fetchParisData() {
+      const res = await fetch('/paris', { headers: { Accept: 'application/json' } });
+      if (!res.ok) {
+        throw new Error('HTTP ' + res.status + ' sur /paris');
+      }
+      const json = await res.json();
+      const rows = json.map((point) => {
+        const date = toDate(point.datetime);
+        const temp = Number(point.temperature_c);
+        return [date, temp];
+      });
+      rows.sort((a, b) => a[0] - b[0]);
+      return rows;
+    }
+
+    function toDate(value) {
+      const parts = value.split('T');
+      const dateParts = parts[0].split('-').map(Number);
+      const timeParts = parts[1].split(':').map(Number);
+      return new Date(dateParts[0], dateParts[1] - 1, dateParts[2], timeParts[0], timeParts[1], 0);
+    }
+
+    function drawChart(rows) {
+      const data = new google.visualization.DataTable();
+      data.addColumn('datetime', 'Date et heure');
+      data.addColumn('number', 'Température en °C');
+      data.addRows(rows);
+
+      const options = {
+        title: 'Température à Paris',
+        legend: { position: 'bottom' },
+        hAxis: {
+          title: 'Date et heure',
+          format: 'dd/MM HH:mm'
+        },
+        vAxis: {
+          title: 'Température en °C'
+        },
+        colors: ['#2f7fbd'],
+        explorer: { actions: ['dragToZoom', 'rightClickToReset'] }
+      };
+
+      const chart = new google.visualization.LineChart(document.getElementById('chart'));
+      chart.draw(data, options);
+      showStatus(rows.length + ' points chargés depuis /paris');
+    }
+
+    function showStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+  </script>
+</body>
+</html>

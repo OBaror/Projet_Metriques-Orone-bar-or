@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atelier météo</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eef4f7;
+      color: #16242d;
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    nav a {
+      color: #185a77;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    p {
+      margin: 0 0 22px;
+      color: #4c5e67;
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) 320px;
+      gap: 20px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #d4e0e8;
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    #gauge {
+      width: 100%;
+      min-height: 300px;
+    }
+
+    .stats {
+      display: grid;
+      gap: 14px;
+    }
+
+    .stat {
+      border-bottom: 1px solid #e4edf2;
+      padding-bottom: 12px;
+    }
+
+    .stat:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .label {
+      display: block;
+      color: #58707c;
+      font-size: 14px;
+    }
+
+    .value {
+      display: block;
+      margin-top: 4px;
+      font-size: 30px;
+      font-weight: 700;
+    }
+
+    #status {
+      margin-top: 14px;
+      color: #4c5e67;
+    }
+
+    @media (max-width: 760px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav>
+      <a href="/">Accueil</a>
+      <a href="/contact">Contact</a>
+      <a href="/rapport">Rapport</a>
+      <a href="/histogramme">Histogramme</a>
+      <a href="/atelier">Atelier</a>
+    </nav>
+    <h1>Vitesse du vent à Marseille</h1>
+    <p>Indicateur météo issu des données Open-Meteo.</p>
+    <section class="dashboard">
+      <div class="panel">
+        <div id="gauge"></div>
+      </div>
+      <aside class="panel stats">
+        <div class="stat">
+          <span class="label">Vent actuel</span>
+          <span class="value" id="current">--</span>
+        </div>
+        <div class="stat">
+          <span class="label">Moyenne sur 7 jours</span>
+          <span class="value" id="average">--</span>
+        </div>
+        <div class="stat">
+          <span class="label">Maximum prévu</span>
+          <span class="value" id="maximum">--</span>
+        </div>
+      </aside>
+    </section>
+    <div id="status"></div>
+  </main>
+  <script>
+    google.charts.load('current', { packages: ['gauge'] });
+    google.charts.setOnLoadCallback(init);
+
+    let cachedPayload = null;
+
+    async function init() {
+      try {
+        const payload = await fetchAtelierData();
+        cachedPayload = payload;
+        drawGauge(payload);
+        fillStats(payload);
+        window.addEventListener('resize', () => {
+          if (cachedPayload) {
+            drawGauge(cachedPayload);
+          }
+        });
+      } catch (err) {
+        showStatus('Erreur: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    async function fetchAtelierData() {
+      const res = await fetch('/atelier-data', { headers: { Accept: 'application/json' } });
+      if (!res.ok) {
+        throw new Error('HTTP ' + res.status + ' sur /atelier-data');
+      }
+      return res.json();
+    }
+
+    function drawGauge(payload) {
+      const data = google.visualization.arrayToDataTable([
+        ['Mesure', 'Valeur'],
+        ['Vent', Number(payload.current)]
+      ]);
+
+      const limit = Math.max(80, Math.ceil(Number(payload.maximum) / 10) * 10);
+      const options = {
+        width: '100%',
+        height: 300,
+        min: 0,
+        max: limit,
+        redFrom: 60,
+        redTo: limit,
+        yellowFrom: 38,
+        yellowTo: 60,
+        greenFrom: 0,
+        greenTo: 38,
+        minorTicks: 5
+      };
+
+      const chart = new google.visualization.Gauge(document.getElementById('gauge'));
+      chart.draw(data, options);
+      showStatus(payload.points.length + ' mesures horaires chargées pour Marseille');
+    }
+
+    function fillStats(payload) {
+      document.getElementById('current').textContent = payload.current + ' ' + payload.unit;
+      document.getElementById('average').textContent = payload.average + ' ' + payload.unit;
+      document.getElementById('maximum').textContent = payload.maximum + ' ' + payload.unit;
+    }
+
+    function showStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+  </script>
+</body>
+</html>

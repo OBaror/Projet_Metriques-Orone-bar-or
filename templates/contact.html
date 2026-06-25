@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Contact</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f1f6f3;
+      color: #18241e;
+    }
+
+    main {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    nav a {
+      color: #206244;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .intro {
+      margin-bottom: 26px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+    }
+
+    p {
+      margin: 0;
+      color: #506158;
+    }
+
+    form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      background: #fff;
+      border: 1px solid #d9e6dd;
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: 0 18px 45px rgba(24, 36, 30, 0.08);
+    }
+
+    label {
+      display: grid;
+      gap: 8px;
+      font-weight: 700;
+      color: #26362d;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #cbd8d0;
+      border-radius: 6px;
+      padding: 12px;
+      font: inherit;
+      color: #18241e;
+      background: #fbfdfc;
+    }
+
+    textarea {
+      min-height: 170px;
+      resize: vertical;
+    }
+
+    .wide {
+      grid-column: 1 / -1;
+    }
+
+    button {
+      justify-self: start;
+      border: 0;
+      border-radius: 6px;
+      background: #206244;
+      color: #fff;
+      padding: 12px 18px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #174d34;
+    }
+
+    @media (max-width: 680px) {
+      form {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav>
+      <a href="/">Accueil</a>
+      <a href="/contact">Contact</a>
+      <a href="/rapport">Rapport</a>
+      <a href="/histogramme">Histogramme</a>
+      <a href="/atelier">Atelier</a>
+    </nav>
+    <section class="intro">
+      <h1>Contact</h1>
+      <p>Un formulaire clair pour laisser un message.</p>
+    </section>
+    <form>
+      <label>
+        Nom
+        <input type="text" name="nom" placeholder="Votre nom">
+      </label>
+      <label>
+        Prénom
+        <input type="text" name="prenom" placeholder="Votre prénom">
+      </label>
+      <label class="wide">
+        Message
+        <textarea name="message" placeholder="Votre message"></textarea>
+      </label>
+      <button type="button">Envoyer</button>
+    </form>
+  </main>
+</body>
+</html>

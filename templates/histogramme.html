@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Histogramme Paris</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f7f8fb;
+      color: #17202a;
+    }
+
+    main {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 32px 20px;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    nav a {
+      color: #1c4f82;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    p {
+      margin: 0 0 22px;
+      color: #566575;
+    }
+
+    #chart {
+      width: 100%;
+      height: 520px;
+      background: #fff;
+      border: 1px solid #dde5ef;
+      border-radius: 8px;
+    }
+
+    #status {
+      margin-top: 14px;
+      color: #566575;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <nav>
+      <a href="/">Accueil</a>
+      <a href="/contact">Contact</a>
+      <a href="/rapport">Rapport</a>
+      <a href="/histogramme">Histogramme</a>
+      <a href="/atelier">Atelier</a>
+    </nav>
+    <h1>Moyenne quotidienne à Paris</h1>
+    <p>Lecture par jour des températures prévues.</p>
+    <div id="chart"></div>
+    <div id="status"></div>
+  </main>
+  <script>
+    google.charts.load('current', { packages: ['corechart'] });
+    google.charts.setOnLoadCallback(init);
+
+    let cachedRows = null;
+
+    async function init() {
+      try {
+        const rows = await fetchDailyRows();
+        cachedRows = rows;
+        drawChart(rows);
+        window.addEventListener('resize', () => {
+          if (cachedRows) {
+            drawChart(cachedRows);
+          }
+        });
+      } catch (err) {
+        showStatus('Erreur: ' + (err && err.message ? err.message : err));
+      }
+    }
+
+    async function fetchDailyRows() {
+      const res = await fetch('/paris', { headers: { Accept: 'application/json' } });
+      if (!res.ok) {
+        throw new Error('HTTP ' + res.status + ' sur /paris');
+      }
+      const json = await res.json();
+      const grouped = {};
+      json.forEach((point) => {
+        const day = point.datetime.slice(0, 10);
+        if (!grouped[day]) {
+          grouped[day] = [];
+        }
+        grouped[day].push(Number(point.temperature_c));
+      });
+      return Object.keys(grouped).sort().map((day) => {
+        const values = grouped[day];
+        const average = values.reduce((sum, value) => sum + value, 0) / values.length;
+        return [formatDay(day), Number(average.toFixed(1))];
+      });
+    }
+
+    function formatDay(day) {
+      const parts = day.split('-');
+      return parts[2] + '/' + parts[1];
+    }
+
+    function drawChart(rows) {
+      const data = new google.visualization.DataTable();
+      data.addColumn('string', 'Jour');
+      data.addColumn('number', 'Température moyenne');
+      data.addRows(rows);
+
+      const options = {
+        title: 'Température moyenne par jour',
+        legend: { position: 'none' },
+        hAxis: { title: 'Jour' },
+        vAxis: { title: 'Température en °C' },
+        colors: ['#3b8c6e'],
+        bar: { groupWidth: '62%' }
+      };
+
+      const chart = new google.visualization.ColumnChart(document.getElementById('chart'));
+      chart.draw(data, options);
+      showStatus(rows.length + ' jours chargés depuis /paris');
+    }
+
+    function showStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+  </script>
+</body>
+</html>
